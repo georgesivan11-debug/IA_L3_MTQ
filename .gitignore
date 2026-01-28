@@ -38,9 +38,12 @@ ENV/
 .ipynb_checkpoints
 
 # Models et données générées
+HEAD
 # *.pkl
 !best_model.pkl
 !scaler.pkl
+*.pkl
+236158a3bf0f3c670d472218435db73ad38dbeee
 *.h5
 *.model
 

@@ -69,7 +69,7 @@ df = load_data()
 st.sidebar.title("Navigation")
 page = st.sidebar.radio(
     "Choisissez une page:",
-    ["🏠 Accueil", "🔮 Prédiction", "📊 Analyse des Données", "ℹ️ À propos"]
+    ["🏠 Accueil", "🔮 Prédiction", "📊 Analyse Complète", "📈 Visualisations Avancées", "ℹ️ À propos"]
 )
 
 # ========== PAGE ACCUEIL ==========
@@ -98,24 +98,27 @@ if page == "🏠 Accueil":
         st.subheader("🎯 Fonctionnalités")
         st.write("""
         - ✅ Prédiction interactive en temps réel
-        - 📊 Visualisation des données
-        - 📈 Analyse statistique
-        - 🤖 Modèles de ML entraînés
-        - 🎨 Interface intuitive
+        - 📊 Visualisations complètes (tous les exercices)
+        - 📈 Analyse statistique approfondie
+        - 🤖 6 modèles de ML comparés
+        - 🎨 Interface intuitive et interactive
         """)
     
-    # Statut du modèle
+    # Statut du modèle et données
     st.markdown("---")
-    if model is not None:
-        st.success("✅ Modèle chargé avec succès ! Vous pouvez faire des prédictions.")
-    else:
-        st.warning("⚠️ Modèle non disponible. Veuillez d'abord exécuter `tp_iris_complet.py` pour entraîner le modèle.")
-        st.code("python tp_iris_complet.py", language="bash")
+    col1, col2 = st.columns(2)
     
-    if df is not None:
-        st.success(f"✅ Dataset chargé : {len(df)} échantillons")
-    else:
-        st.error("❌ Dataset non disponible")
+    with col1:
+        if model is not None:
+            st.success("✅ Modèle chargé avec succès !")
+        else:
+            st.warning("⚠️ Modèle non disponible. Exécutez `tp_iris_complet.py` d'abord.")
+    
+    with col2:
+        if df is not None:
+            st.success(f"✅ Dataset chargé : {len(df)} échantillons")
+        else:
+            st.error("❌ Dataset non disponible")
     
     st.markdown("---")
     st.info("👈 Utilisez le menu à gauche pour naviguer entre les différentes pages")
@@ -198,99 +201,345 @@ elif page == "🔮 Prédiction":
                     'Probabilité': probabilities
                 })
                 
-                # Graphique des probabilités
-                fig, ax = plt.subplots(figsize=(8, 4))
-                colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
-                bars = ax.barh(prob_df['Espèce'], prob_df['Probabilité'], color=colors)
-                ax.set_xlabel('Probabilité')
-                ax.set_xlim([0, 1])
-                ax.set_title('Probabilités par espèce')
+                col1, col2 = st.columns([2, 1])
                 
-                # Ajouter les valeurs sur les barres
-                for i, (bar, v) in enumerate(zip(bars, prob_df['Probabilité'])):
-                    ax.text(v + 0.02, i, f'{v:.2%}', va='center')
+                with col1:
+                    # Graphique des probabilités
+                    fig, ax = plt.subplots(figsize=(10, 4))
+                    colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+                    bars = ax.barh(prob_df['Espèce'], prob_df['Probabilité'], color=colors)
+                    ax.set_xlabel('Probabilité', fontsize=12)
+                    ax.set_xlim([0, 1])
+                    ax.set_title('Probabilités par espèce', fontsize=14, fontweight='bold')
+                    ax.grid(axis='x', alpha=0.3)
+                    
+                    # Ajouter les valeurs sur les barres
+                    for i, (bar, v) in enumerate(zip(bars, prob_df['Probabilité'])):
+                        ax.text(v + 0.02, i, f'{v:.2%}', va='center', fontweight='bold')
+                    
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                    plt.close()
                 
-                st.pyplot(fig)
-                plt.close()
-                
-                # Afficher le tableau
-                st.dataframe(prob_df.style.format({'Probabilité': '{:.2%}'}))
+                with col2:
+                    # Afficher le tableau
+                    st.dataframe(
+                        prob_df.style.format({'Probabilité': '{:.2%}'})
+                        .background_gradient(cmap='RdYlGn', subset=['Probabilité']),
+                        use_container_width=True
+                    )
             
         except Exception as e:
             st.error(f"Erreur lors de la prédiction : {e}")
             st.info("Vérifiez que le modèle a été correctement entraîné.")
 
-# ========== PAGE ANALYSE ==========
-elif page == "📊 Analyse des Données":
-    st.header("Analyse des Données Iris")
+# ========== PAGE ANALYSE COMPLÈTE ==========
+elif page == "📊 Analyse Complète":
+    st.header("Analyse Complète des Données Iris")
     
     if df is None:
         st.error("❌ Dataset non disponible")
         st.stop()
     
+    # Aperçu des données
     st.subheader("📋 Aperçu des données")
-    st.dataframe(df.head(10))
+    col1, col2 = st.columns([2, 1])
     
-    st.subheader("📊 Statistiques descriptives")
-    st.dataframe(df.describe())
+    with col1:
+        st.dataframe(df.head(10), use_container_width=True)
+    
+    with col2:
+        st.metric("Nombre total d'échantillons", len(df))
+        st.metric("Nombre de variables", len(df.columns) - 1)
+        if 'species' in df.columns:
+            st.metric("Nombre d'espèces", df['species'].nunique())
     
     st.markdown("---")
     
-    # Visualisations
-    tab1, tab2, tab3 = st.tabs(["Distribution", "Corrélations", "Boxplots"])
+    # Statistiques descriptives
+    st.subheader("📊 Statistiques descriptives")
+    st.dataframe(df.describe(), use_container_width=True)
     
-    with tab1:
-        st.subheader("Distribution des espèces")
-        if 'species' in df.columns:
+    st.markdown("---")
+    
+    # EXERCICE 1 : Visualisations des effectifs
+    st.subheader("📊 Exercice 1 : Effectifs par espèce")
+    
+    if 'species' in df.columns:
+        effectifs = df['species'].value_counts()
+        
+        # Afficher les effectifs
+        st.write("**Effectifs :**")
+        st.dataframe(effectifs, use_container_width=True)
+        
+        # Créer 4 graphiques différents
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Histogramme
             fig, ax = plt.subplots(figsize=(8, 5))
-            counts = df['species'].value_counts()
-            ax.bar(counts.index, counts.values, color=['#FF6B6B', '#4ECDC4', '#45B7D1'])
-            ax.set_ylabel('Nombre')
-            ax.set_xlabel('Espèce')
-            ax.set_title('Répartition des espèces')
+            effectifs.plot(kind='bar', ax=ax, color=['green', 'orange', 'blue'])
+            ax.set_title("Histogramme des espèces", fontsize=14, fontweight='bold')
+            ax.set_xlabel("Espèces")
+            ax.set_ylabel("Effectif")
+            ax.grid(axis='y', alpha=0.3)
             plt.xticks(rotation=0)
+            plt.tight_layout()
             st.pyplot(fig)
             plt.close()
-        else:
-            st.warning("Colonne 'species' non trouvée dans le dataset")
-    
-    with tab2:
-        st.subheader("Matrice de corrélation")
-        try:
-            numeric_df = df.select_dtypes(include=[np.number])
-            if not numeric_df.empty:
-                fig, ax = plt.subplots(figsize=(10, 8))
-                sns.heatmap(numeric_df.corr(), annot=True, cmap='coolwarm', ax=ax, center=0)
-                ax.set_title('Corrélations entre variables')
-                st.pyplot(fig)
-                plt.close()
-            else:
-                st.warning("Aucune variable numérique trouvée")
-        except Exception as e:
-            st.error(f"Erreur lors de la création de la matrice de corrélation : {e}")
-    
-    with tab3:
-        st.subheader("Boxplots par espèce")
+            
+            # Barres groupées
+            fig, ax = plt.subplots(figsize=(8, 5))
+            ax.bar(effectifs.index, effectifs.values, color=['#FF6B6B', '#4ECDC4', '#45B7D1'])
+            ax.set_title("Barres groupées des espèces", fontsize=14, fontweight='bold')
+            ax.set_xlabel("Espèces")
+            ax.set_ylabel("Effectif")
+            ax.grid(axis='y', alpha=0.3)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
         
-        # Trouver les colonnes numériques
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        with col2:
+            # Diagramme circulaire
+            fig, ax = plt.subplots(figsize=(8, 8))
+            colors = ['#FF6B6B', '#4ECDC4', '#45B7D1']
+            ax.pie(effectifs.values, labels=effectifs.index, autopct='%1.1f%%', 
+                   colors=colors, startangle=90)
+            ax.set_title("Répartition des espèces (diagramme circulaire)", 
+                        fontsize=14, fontweight='bold')
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
+            
+            # Diagramme en cascade
+            fig, ax = plt.subplots(figsize=(8, 5))
+            values = effectifs.values
+            cum = np.cumsum(values)
+            ax.bar(effectifs.index, values, color=['green', 'orange', 'blue'], alpha=0.7)
+            ax.plot(effectifs.index, cum, marker='o', color='red', linewidth=2, 
+                   markersize=8, label='Cumulé')
+            ax.set_title("Diagramme en cascade", fontsize=14, fontweight='bold')
+            ax.set_ylabel("Effectif")
+            ax.legend()
+            ax.grid(alpha=0.3)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
+    
+    st.markdown("---")
+    
+    # EXERCICE 2 : Variables quantitatives
+    st.subheader("📈 Exercice 2 : Variables quantitatives")
+    
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    if numeric_cols:
+        # Créer des onglets pour chaque variable
+        tabs = st.tabs([col.upper() for col in numeric_cols])
         
-        if numeric_cols:
-            variable = st.selectbox("Choisir une variable:", numeric_cols)
+        for i, col_name in enumerate(numeric_cols):
+            with tabs[i]:
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    st.write("**Statistiques :**")
+                    stats = df[col_name].describe()
+                    st.dataframe(stats, use_container_width=True)
+                
+                with col2:
+                    # Histogramme
+                    fig, ax = plt.subplots(figsize=(10, 5))
+                    ax.hist(df[col_name], bins=15, edgecolor='black', color='skyblue', alpha=0.7)
+                    ax.set_title(f"Distribution de {col_name}", fontsize=14, fontweight='bold')
+                    ax.set_xlabel(f"{col_name} (cm)")
+                    ax.set_ylabel("Fréquence")
+                    ax.grid(axis='y', alpha=0.3)
+                    ax.axvline(df[col_name].mean(), color='red', linestyle='--', 
+                              linewidth=2, label=f'Moyenne: {df[col_name].mean():.2f}')
+                    ax.legend()
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                    plt.close()
+
+# ========== PAGE VISUALISATIONS AVANCÉES ==========
+elif page == "📈 Visualisations Avancées":
+    st.header("Visualisations Avancées")
+    
+    if df is None:
+        st.error("❌ Dataset non disponible")
+        st.stop()
+    
+    # EXERCICE 3 : Pairplot
+    st.subheader("🔗 Exercice 3 : Nuages de points (Pairplot)")
+    st.write("Relations entre toutes les paires de variables, colorées par espèce")
+    
+    if st.checkbox("Afficher le Pairplot (peut être lent)", value=False):
+        with st.spinner("Génération du pairplot..."):
+            fig = sns.pairplot(df, hue='species', palette=['#FF6B6B', '#4ECDC4', '#45B7D1'],
+                             diag_kind='hist', height=2.5)
+            fig.fig.suptitle("Matrice de nuages de points par espèce", y=1.02, fontsize=16, fontweight='bold')
+            st.pyplot(fig)
+            plt.close()
+    
+    st.markdown("---")
+    
+    # EXERCICE 4 : Boxplots
+    st.subheader("📦 Exercice 4 : Boxplots par espèce")
+    
+    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+    
+    if numeric_cols and 'species' in df.columns:
+        # Sélecteur de variable
+        selected_var = st.selectbox(
+            "Choisir une variable à analyser:",
+            numeric_cols,
+            format_func=lambda x: x.upper()
+        )
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Boxplot simple
+            fig, ax = plt.subplots(figsize=(10, 6))
+            df.boxplot(column=selected_var, by='species', ax=ax)
+            plt.suptitle('')
+            ax.set_title(f'{selected_var} par espèce', fontsize=14, fontweight='bold')
+            ax.set_xlabel('Espèce')
+            ax.set_ylabel(f'{selected_var} (cm)')
+            ax.grid(alpha=0.3)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
+        
+        with col2:
+            # Boxplot avec seaborn (plus esthétique)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.boxplot(data=df, x='species', y=selected_var, ax=ax,
+                       palette=['#FF6B6B', '#4ECDC4', '#45B7D1'])
+            ax.set_title(f'{selected_var} par espèce (Seaborn)', fontsize=14, fontweight='bold')
+            ax.set_xlabel('Espèce')
+            ax.set_ylabel(f'{selected_var} (cm)')
+            ax.grid(axis='y', alpha=0.3)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
+        
+        # Afficher tous les boxplots
+        if st.checkbox("Afficher tous les boxplots ensemble", value=True):
+            fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+            axes = axes.ravel()
+            
+            for i, col in enumerate(numeric_cols):
+                sns.boxplot(data=df, x='species', y=col, ax=axes[i],
+                           palette=['#FF6B6B', '#4ECDC4', '#45B7D1'])
+                axes[i].set_title(f'{col}', fontsize=12, fontweight='bold')
+                axes[i].set_xlabel('Espèce')
+                axes[i].set_ylabel(f'{col} (cm)')
+                axes[i].grid(axis='y', alpha=0.3)
+            
+            plt.suptitle('Comparaison de toutes les variables par espèce', 
+                        fontsize=16, fontweight='bold', y=1.02)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
+    
+    st.markdown("---")
+    
+    # EXERCICE 5 : Corrélations
+    st.subheader("🔗 Exercice 5 : Corrélations et visualisations avancées")
+    
+    numeric_df = df.select_dtypes(include=[np.number])
+    
+    if not numeric_df.empty:
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Matrice de corrélation
+            st.write("**Matrice de corrélation :**")
+            correlation = numeric_df.corr()
+            st.dataframe(correlation.style.background_gradient(cmap='coolwarm', vmin=-1, vmax=1),
+                        use_container_width=True)
+        
+        with col2:
+            # Heatmap de corrélation
+            fig, ax = plt.subplots(figsize=(10, 8))
+            sns.heatmap(correlation, annot=True, cmap='coolwarm', center=0, 
+                       square=True, linewidths=1, cbar_kws={"shrink": 0.8}, ax=ax,
+                       fmt='.2f')
+            ax.set_title("Heatmap de corrélation", fontsize=14, fontweight='bold')
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
+        
+        # Nuage de points pétales avec distinction par espèce
+        st.write("**Nuage de points : Longueur vs Largeur du pétale**")
+        
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        if 'species' in df.columns:
+            colors_map = {'setosa': '#FF6B6B', 'versicolor': '#4ECDC4', 'virginica': '#45B7D1'}
+            
+            for esp in df['species'].unique():
+                sous_df = df[df['species'] == esp]
+                color = colors_map.get(esp, 'gray')
+                ax.scatter(
+                    sous_df['petallength'],
+                    sous_df['petalwidth'],
+                    label=esp.capitalize(),
+                    s=100,
+                    alpha=0.6,
+                    edgecolors='black',
+                    linewidths=0.5,
+                    color=color
+                )
+        
+        ax.set_title("Relation Longueur/Largeur des pétales par espèce", 
+                    fontsize=14, fontweight='bold')
+        ax.set_xlabel("Longueur du pétale (cm)", fontsize=12)
+        ax.set_ylabel("Largeur du pétale (cm)", fontsize=12)
+        ax.legend(title='Espèce', fontsize=10)
+        ax.grid(True, alpha=0.3)
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close()
+        
+        # Scatter matrix interactif
+        st.write("**Choix personnalisé de variables à comparer :**")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            var_x = st.selectbox("Variable X:", numeric_cols, index=0)
+        
+        with col2:
+            var_y = st.selectbox("Variable Y:", numeric_cols, index=1)
+        
+        if var_x and var_y:
+            fig, ax = plt.subplots(figsize=(10, 6))
             
             if 'species' in df.columns:
-                fig, ax = plt.subplots(figsize=(10, 6))
-                df.boxplot(column=variable, by='species', ax=ax)
-                plt.suptitle('')
-                ax.set_title(f'{variable} par espèce')
-                ax.set_xlabel('Espèce')
-                ax.set_ylabel(variable)
-                st.pyplot(fig)
-                plt.close()
-            else:
-                st.warning("Colonne 'species' non trouvée")
-        else:
-            st.warning("Aucune variable numérique disponible")
+                for esp in df['species'].unique():
+                    sous_df = df[df['species'] == esp]
+                    color = colors_map.get(esp, 'gray')
+                    ax.scatter(
+                        sous_df[var_x],
+                        sous_df[var_y],
+                        label=esp.capitalize(),
+                        s=100,
+                        alpha=0.6,
+                        edgecolors='black',
+                        linewidths=0.5,
+                        color=color
+                    )
+            
+            ax.set_title(f"Relation {var_x} vs {var_y}", fontsize=14, fontweight='bold')
+            ax.set_xlabel(f"{var_x} (cm)", fontsize=12)
+            ax.set_ylabel(f"{var_y} (cm)", fontsize=12)
+            ax.legend(title='Espèce')
+            ax.grid(True, alpha=0.3)
+            plt.tight_layout()
+            st.pyplot(fig)
+            plt.close()
 
 # ========== PAGE À PROPOS ==========
 elif page == "ℹ️ À propos":
@@ -306,20 +555,31 @@ elif page == "ℹ️ À propos":
     - **Scikit-learn** : Bibliothèque de Machine Learning
     - **Pandas & NumPy** : Manipulation de données
     - **Matplotlib & Seaborn** : Visualisation
-    - **Streamlit** : Interface web
+    - **Streamlit** : Interface web interactive
     - **Flask** : API REST (optionnel)
     
     #### 📚 Dataset :
     Le dataset Iris est un classique en Machine Learning, créé par Edgar Anderson 
     et popularisé par R.A. Fisher en 1936.
     
+    - **150 échantillons** (50 par espèce)
+    - **4 caractéristiques** numériques
+    - **3 classes** équilibrées
+    
     #### 🤖 Modèles testés :
     - K-Nearest Neighbors (KNN)
     - Régression Logistique
     - Arbre de Décision
     - Naive Bayes
-    - SVM
-    - Réseau de Neurones
+    - SVM (Support Vector Machine)
+    - Réseau de Neurones (MLP)
+    
+    #### 📊 Exercices inclus :
+    - ✅ **Exercice 1** : Visualisation des effectifs (histogramme, pie, barres, cascade)
+    - ✅ **Exercice 2** : Analyse des variables quantitatives
+    - ✅ **Exercice 3** : Nuages de points et pairplot
+    - ✅ **Exercice 4** : Boxplots par espèce
+    - ✅ **Exercice 5** : Corrélations et visualisations avancées
     
     ---
     
@@ -339,13 +599,41 @@ elif page == "ℹ️ À propos":
     - Créer un repo GitHub
     - Ajouter tous les fichiers + Iris.csv
     - Déployer sur Streamlit Cloud
+    
+    ---
+    
+    ### 🎯 Résultats typiques :
+    
+    Les modèles atteignent généralement une exactitude de **95-100%** sur ce dataset,
+    démontrant l'efficacité du Machine Learning pour la classification de données bien structurées.
     """)
     
     st.success("✅ Application développée avec ❤️ pour l'apprentissage du ML")
+    
+    st.markdown("---")
+    
+    # Informations sur le dataset
+    if df is not None:
+        st.subheader("📊 Informations sur le dataset actuel")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("📝 Total échantillons", len(df))
+        
+        with col2:
+            if 'species' in df.columns:
+                st.metric("🌸 Nombre d'espèces", df['species'].nunique())
+        
+        with col3:
+            st.metric("📊 Nombre de variables", len(df.columns) - 1)
 
 # Footer
 st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; color: gray;'>🌸 Iris Classifier - ML Project 2025</div>",
+    "<div style='text-align: center; color: gray; font-size: 14px;'>"
+    "🌸 Iris Classifier - ML Project 2025 | "
+    "Développé avec Streamlit & Scikit-learn"
+    "</div>",
     unsafe_allow_html=True
 )
